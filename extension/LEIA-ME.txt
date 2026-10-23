@@ -1,0 +1,29 @@
+GIF nos Comentários do YouTube v1.8.8 (Chrome, Manifest V3)
+
+INSTALAR
+1. Extraia este ZIP em uma pasta.
+2. Abra chrome://extensions e ative o Modo do desenvolvedor.
+3. Clique em Carregar sem compactação e selecione a pasta gif-comentarios-youtube.
+4. Abra o YouTube. Não é necessário configurar nada nem inserir chave de API.
+5. Nos comentários, use o botão GIF para pesquisar ou cole um link direto de GIF.
+
+PESQUISA SEM CHAVE
+A pesquisa usa páginas públicas do GIPHY e pode falhar se o site mudar ou bloquear o acesso. Colar um link direto de GIF continua sendo uma alternativa.
+
+LIMITAÇÃO
+O YouTube aceita texto nos comentários comuns. A extensão transforma links de GIF em imagens apenas localmente para quem tem a extensão instalada; pessoas sem ela verão o link.
+
+
+Versão 1.7.9: reforço dos seletores de comentários de vídeos comuns e do painel de comentários, além dos Shorts. A extensão só mantém a imagem se o GIF carregar; caso contrário, restaura o link original.
+
+Versão 1.8.3: o GIF agora é inserido como uma miniatura no próprio cursor do editor (inclusive no meio do texto). Ao publicar, o link vira uma imagem grande em uma linha própria, com o texto anterior e posterior preservados. Ao editar, o link é convertido novamente em miniatura inline. Inclui reconhecimento de media.giphy.com e media2.giphy.com em vídeos comuns e Shorts, sem buscar/navegar o frame do YouTube.
+
+Versão 1.8.4: ao inserir um GIF encostado em texto, a extensão acrescenta automaticamente um espaço antes e/ou depois dele.
+
+Versão 1.8.5: em comentários de vídeos longos, os GIFs usam a mesma estrutura de imagem do YouTube (ytCoreImageHost / ytwCommentImageAttachmentViewModelImage) e também são detectados dentro de yt-attributed-string.
+
+Versão 1.8.6: a leitura do comentário publicado agora alcança as camadas Shadow DOM abertas do YouTube. Isso permite converter o link em GIF após publicar também nos vídeos longos.
+
+Versão 1.8.7: tratamento direto da estrutura confirmada da página de vídeo longo: ytd-comment-view-model > yt-attributed-string#content-text[slot="content"] > a.ytAttributedStringLink. O link recém-publicado é convertido no GIF nativo antes da leitura genérica.
+
+Versão 1.8.8: reconhecimento explícito de URLs diretas como https://media.giphy.com/media/ID/giphy.gif, tanto no texto como no redirecionamento do YouTube. A imagem publicada usa o carregamento HTTP(S) padrão do navegador.
