@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  console.log('[GIF YouTube] extensão carregada');
+  console.log('[Nexus YouTube+] extensão carregada');
 
   const send = (msg) =>
     new Promise((resolve) => {
@@ -29,6 +29,39 @@
   let heights = [0, 0];
   let debounce;
   let floatVisible = false;
+  let sportsMenu;
+  let sportsHideTimer;
+
+  const extensionConfig = { enabled: true, gifButton: true, plusToolbar: true, shortcuts: true, commentTools: true,
+    backgroundColor: '#0f0f0f', backgroundImage: '', backgroundOpacity: 25, backgroundTarget: 'main', compactPanel: false };
+  function applyExtensionConfig(config) {
+    Object.assign(extensionConfig, config || {});
+    const root = document.documentElement;
+    root.classList.toggle('ytgif-extension-disabled', !extensionConfig.enabled);
+    root.classList.toggle('ytgif-hide-gif-button', !extensionConfig.gifButton);
+    root.classList.toggle('ytgif-hide-plus-toolbar', !extensionConfig.plusToolbar);
+    root.classList.toggle('ytgif-disable-comment-tools', !extensionConfig.commentTools);
+    root.classList.toggle('ytgif-compact-panel', !!extensionConfig.compactPanel);
+    const color = /^#[0-9a-f]{3,8}$/i.test(extensionConfig.backgroundColor || '') ? extensionConfig.backgroundColor : '#0f0f0f';
+    const image = typeof extensionConfig.backgroundImage === 'string' ? extensionConfig.backgroundImage.trim() : '';
+    const opacity = Math.max(0, Math.min(100, Number(extensionConfig.backgroundOpacity) || 0)) / 100;
+    let safeUrl = '';
+    try { const u = new URL(image); if (u.protocol === 'https:' || u.protocol === 'http:') safeUrl = u.href.replace(/[()\\\\"']/g, ''); } catch (_) {}
+    root.style.setProperty('--ytgif-custom-background', color);
+    root.style.setProperty('--ytgif-custom-bg-image', safeUrl ? `linear-gradient(rgba(15,15,15,${1-opacity}), rgba(15,15,15,${1-opacity})), url("${safeUrl}")` : 'none');
+    root.classList.toggle('ytgif-custom-bg-all', extensionConfig.backgroundTarget === 'all');
+    root.classList.toggle('ytgif-custom-bg-main', extensionConfig.backgroundTarget !== 'all');
+    document.querySelectorAll('.ytgif-sidebar-settings').forEach(el => { if (!extensionConfig.enabled) el.remove(); });
+  }
+  try {
+    chrome.storage.sync.get(extensionConfig, applyExtensionConfig);
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'sync') return;
+      const patch = {};
+      Object.keys(changes).forEach(k => patch[k] = changes[k].newValue);
+      applyExtensionConfig(patch);
+    });
+  } catch (_) {}
 
   /* ---------- Painel de GIFs ---------- */
   function buildPanel() {
@@ -38,16 +71,96 @@
     panel.innerHTML = `
       <div class="ytgif-head">
         <input type="text" class="ytgif-search" placeholder="Pesquisar GIFs ou colar link" autocomplete="off" spellcheck="false">
+        <button type="button" class="ytgif-tools-toggle" title="Ferramentas Plus">Plus</button>
         <button type="button" class="ytgif-close" title="Fechar">✕</button>
       </div>
       <div class="ytgif-body">
         <div class="ytgif-cols"><div class="ytgif-col"></div><div class="ytgif-col"></div></div>
         <div class="ytgif-status"></div>
       </div>
-      <div class="ytgif-foot"></div>`;
+      <div class="ytgif-foot"></div>
+      <section class="ytgif-plus-tools" hidden>
+        <div class="ytgif-plus-title">YouTube Plus</div>
+        <div class="ytgif-plus-grid">
+          <button data-plus="queue">Fila inteligente</button>
+          <button data-plus="clean">Limpeza visual</button>
+          <button data-plus="stats">Estatísticas</button>
+          <button data-plus="repeat">Repetir últimos 10 s</button>
+          <button data-plus="shorts">Modo Shorts</button>
+          <button data-plus="audio">Áudio +</button>
+          <button data-plus="export">Exportar dados</button>
+          <button data-plus="diagnostics">Diagnóstico</button>
+        </div>
+        <div class="ytgif-plus-status" aria-live="polite"></div>
+      </section>`;
     document.body.appendChild(panel);
 
     searchInput = panel.querySelector('.ytgif-search');
+    const plusTools = panel.querySelector('.ytgif-plus-tools');
+    const plusStatus = panel.querySelector('.ytgif-plus-status');
+    panel.querySelector('.ytgif-tools-toggle').addEventListener('click', () => {
+      plusTools.hidden = !plusTools.hidden;
+    });
+    const plusSay = (message) => { plusStatus.textContent = message; };
+    const readData = () => {
+      try { return JSON.parse(localStorage.getItem('ytgifPlusData') || '{}'); } catch (_) { return {}; }
+    };
+    const saveData = (data) => localStorage.setItem('ytgifPlusData', JSON.stringify(data));
+    const videoNow = () => document.querySelector('video.html5-main-video, ytd-player video, video');
+    const videoKey = () => location.pathname + location.search;
+    panel.querySelectorAll('[data-plus]').forEach((button) => button.addEventListener('click', () => {
+      const action = button.dataset.plus;
+      const data = readData();
+      if (action === 'queue') {
+        const links = [...document.querySelectorAll('a#video-title, a[href*="/watch"], a[href*="/shorts/"]')]
+          .filter(a => a.href && a.querySelector('yt-img-shadow, img') && !a.href.includes('list='))
+          .map(a => ({title:(a.textContent || a.getAttribute('title') || 'Vídeo').trim(), url:a.href}))
+          .filter((item, i, arr) => arr.findIndex(x => x.url === item.url) === i).slice(0, 30);
+        data.queue = links; saveData(data);
+        plusSay('Fila salva: ' + links.length + ' vídeos encontrados nesta página.');
+      } else if (action === 'clean') {
+        document.documentElement.classList.toggle('ytgif-plus-clean');
+        plusSay(document.documentElement.classList.contains('ytgif-plus-clean') ? 'Limpeza visual ativada. Clique novamente para restaurar.' : 'Visual original restaurado.');
+      } else if (action === 'stats') {
+        const stats = data.stats || {};
+        stats[videoKey()] = {title: document.title, seconds: Math.floor((videoNow() || {}).currentTime || 0), updated: new Date().toISOString()};
+        data.stats = stats; saveData(data);
+        plusSay('Estatísticas locais: ' + Object.keys(stats).length + ' vídeos registrados.');
+      } else if (action === 'repeat') {
+        const v = videoNow();
+        if (!v) return plusSay('Nenhum vídeo encontrado.');
+        const end = v.currentTime, start = Math.max(0, end - 10);
+        v.currentTime = start;
+        const handler = () => { if (v.currentTime >= end) v.currentTime = start; };
+        v.addEventListener('timeupdate', handler);
+        plusSay('Repetindo o trecho de 10 segundos. Clique novamente para parar.');
+        button.dataset.repeatActive = '1';
+        button.onclick = () => { v.removeEventListener('timeupdate', handler); button.onclick = null; delete button.dataset.repeatActive; plusSay('Repetição desativada.'); };
+      } else if (action === 'shorts') {
+        document.documentElement.classList.toggle('ytgif-plus-shorts');
+        plusSay(document.documentElement.classList.contains('ytgif-plus-shorts') ? 'Modo Shorts ativado.' : 'Modo Shorts desativado.');
+      } else if (action === 'audio') {
+        const v = videoNow();
+        if (!v) return plusSay('Nenhum vídeo encontrado.');
+        v.volume = v.volume >= 1 ? 0.7 : Math.min(1, v.volume + 0.2);
+        plusSay('Volume do vídeo: ' + Math.round(v.volume * 100) + '%. O limite do elemento é 100%.');
+      } else if (action === 'export') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob); const a = document.createElement('a');
+        a.href = url; a.download = 'youtube-plus-dados.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+        plusSay('Exportação iniciada.');
+      } else if (action === 'diagnostics') {
+        const v = videoNow();
+        plusSay('Diagnóstico: vídeo=' + Boolean(v) + ', Shorts=' + location.pathname.includes('/shorts/') + ', painel=' + Boolean(panel) + ', versão 2.1.0.');
+      }
+    }));
+    document.addEventListener('keydown', (e) => {
+      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.altKey && e.key.toLowerCase() === 'p') { e.preventDefault(); if (panel.hidden) openPanel(floatBtn || document.body, currentEditor); else closePanel(); }
+      if (e.altKey && e.key === 'ArrowRight') { const v=videoNow(); if(v) v.currentTime += 5; }
+      if (e.altKey && e.key === 'ArrowLeft') { const v=videoNow(); if(v) v.currentTime = Math.max(0,v.currentTime-5); }
+    });
+
     bodyEl = panel.querySelector('.ytgif-body');
     cols = [...panel.querySelectorAll('.ytgif-col')];
     statusEl = panel.querySelector('.ytgif-status');
@@ -288,6 +401,168 @@
     btn.textContent = 'GIF';
     btn.addEventListener('mousedown', (e) => e.preventDefault());
     return btn;
+  }
+
+  function trophyIconMarkup() {
+    return '<svg class="ytgif-sports-trophy" aria-hidden="true" viewBox="0 0 24 24" focusable="false"><g fill="none" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0.7px 1px 0.7px #000)"><path d="M7.5 3.5h9v5.8a4.5 4.5 0 0 1-9 0V3.5Z" stroke="#f4f4f4" stroke-width="2.1"/><path d="M7.5 5H4.7v2.1a4 4 0 0 0 4 4M16.5 5h2.8v2.1a4 4 0 0 1-4 4" stroke="#e2e2e2" stroke-width="1.8"/><path d="M12 13.8v4.1M9 21h6M10 18h4" stroke="#f4f4f4" stroke-width="2"/></g></svg>';
+  }
+
+  function buildSportsMenu() {
+    if (sportsMenu) return sportsMenu;
+    sportsMenu = document.createElement('div');
+    sportsMenu.id = 'ytgif-sports-menu';
+    sportsMenu.hidden = true;
+    sportsMenu.innerHTML = [
+      ['⚽', 'Futebol', 'futebol'],
+      ['🏀', 'Basquete', 'basquete'],
+      ['🏐', 'Vôlei', 'volei'],
+      ['🏎️', 'Fórmula 1', 'formula 1'],
+      ['🥊', 'MMA', 'mma'],
+      ['🎾', 'Tênis', 'tenis'],
+      ['⚾', 'Beisebol', 'beisebol'],
+      ['🏈', 'Futebol americano', 'futebol americano'],
+      ['🏉', 'Rúgbi', 'rugby'],
+      ['🏸', 'Badminton', 'badminton'],
+      ['🏓', 'Tênis de mesa', 'tenis de mesa'],
+      ['🥋', 'Judô', 'judo'],
+      ['🥋', 'Taekwondo', 'taekwondo'],
+      ['🏊', 'Natação', 'natacao'],
+      ['🚴', 'Ciclismo', 'ciclismo'],
+      ['🏋️', 'Levantamento de peso', 'levantamento de peso']
+    ].map(([icon, label, query]) =>
+      '<a href="/results?search_query=' + encodeURIComponent(query) + '" data-query="' + query + '"><span>' + icon + '</span>' + label + '</a>'
+    ).join('');
+    sportsMenu.querySelectorAll('a[data-query]').forEach((item) => {
+      item.addEventListener('click', (event) => {
+        event.preventDefault();
+        const query = item.getAttribute('data-query') || '';
+        // Use the selected category for results, but keep YouTube's visible search field empty.
+        const target = new URL('/results', location.origin);
+        target.searchParams.set('search_query', query);
+        location.assign(target.href);
+        try {
+          sessionStorage.setItem('ytgif-clear-search-after-sports', '1');
+        } catch (_) {}
+      });
+    });
+    sportsMenu.addEventListener('mouseenter', () => clearTimeout(sportsHideTimer));
+    sportsMenu.addEventListener('mouseleave', hideSportsMenuSoon);
+    document.body.appendChild(sportsMenu);
+    return sportsMenu;
+  }
+
+  function showSportsMenu(anchor) {
+    const menu = buildSportsMenu();
+    clearTimeout(sportsHideTimer);
+    const rect = anchor.getBoundingClientRect();
+    menu.style.left = Math.min(rect.right + 8, window.innerWidth - 190) + 'px';
+    menu.style.top = Math.max(8, Math.min(rect.top, window.innerHeight - 270)) + 'px';
+    menu.hidden = false;
+  }
+
+  function hideSportsMenuSoon() {
+    clearTimeout(sportsHideTimer);
+    sportsHideTimer = setTimeout(() => {
+      if (sportsMenu) sportsMenu.hidden = true;
+    }, 180);
+  }
+
+  function connectSportsMenu(entry) {
+    const link = entry.querySelector('a[href]');
+    if (!link || link.dataset.ytgifSportsMenu) return;
+    link.dataset.ytgifSportsMenu = '1';
+    link.href = '#';
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      showSportsMenu(link);
+    });
+    entry.addEventListener('mouseenter', () => showSportsMenu(link));
+    entry.addEventListener('mouseleave', hideSportsMenuSoon);
+    link.addEventListener('focus', () => showSportsMenu(link));
+  }
+
+  /* ---------- Atalho Esportes abaixo de Shorts ---------- */
+  function injectSportsTab() {
+    const shorts = [...document.querySelectorAll('ytd-guide-entry-renderer')].find((entry) => {
+      const title = entry.querySelector('#title, yt-formatted-string');
+      return title && title.textContent.trim().toLowerCase() === 'shorts';
+    });
+    if (!shorts || shorts.parentElement.querySelector('.ytgif-sports-entry')) return;
+
+    // Clonar a entrada nativa preserva tamanho, tema claro/escuro e comportamento
+    // visual da barra lateral do YouTube.
+    const sports = shorts.cloneNode(true);
+    sports.classList.add('ytgif-sports-entry');
+    sports.removeAttribute('selected');
+    const link = sports.querySelector('a[href]');
+    if (!link) return;
+    link.href = '#';
+    link.setAttribute('aria-label', 'Esportes');
+    link.removeAttribute('aria-current');
+    const title = sports.querySelector('#title, yt-formatted-string');
+    if (title) title.textContent = 'Esportes';
+    const icon = sports.querySelector('#icon, yt-icon');
+    if (icon) {
+      const trophy = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      trophy.setAttribute('class', 'ytgif-sports-trophy');
+      trophy.setAttribute('viewBox', '0 0 24 24');
+      trophy.setAttribute('aria-hidden', 'true');
+      trophy.setAttribute('focusable', 'false');
+      trophy.innerHTML = '<g fill="none" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0.7px 1px 0.7px #000)"><path d="M7.5 3.5h9v5.8a4.5 4.5 0 0 1-9 0V3.5Z" stroke="#f4f4f4" stroke-width="2.1"/><path d="M7.5 5H4.7v2.1a4 4 0 0 0 4 4M16.5 5h2.8v2.1a4 4 0 0 1-4 4" stroke="#e2e2e2" stroke-width="1.8"/><path d="M12 13.8v4.1M9 21h6M10 18h4" stroke="#f4f4f4" stroke-width="2"/></g>';
+      icon.replaceWith(trophy);
+    }
+    connectSportsMenu(sports);
+    shorts.insertAdjacentElement('afterend', sports);
+  }
+
+  function injectMiniSportsTab() {
+    const shorts = [...document.querySelectorAll('ytd-mini-guide-entry-renderer')].find((entry) => {
+      const link = entry.querySelector('a[aria-label]');
+      return link && link.getAttribute('aria-label').trim().toLowerCase() === 'shorts';
+    });
+    if (!shorts || shorts.parentElement.querySelector('.ytgif-mini-sports-entry')) return;
+
+    // Esta é a barra compacta exibida na imagem: Início, Shorts, Inscrições e Você.
+    const sports = shorts.cloneNode(true);
+    sports.classList.add('ytgif-mini-sports-entry');
+    const link = sports.querySelector('a[href]');
+    if (!link) return;
+    link.href = '#';
+    link.setAttribute('aria-label', 'Esportes');
+    link.setAttribute('title', 'Esportes');
+    link.removeAttribute('aria-current');
+    const title = sports.querySelector('.title');
+    if (title) title.textContent = 'Esportes';
+    const tooltip = sports.querySelector('tp-yt-paper-tooltip #tooltip');
+    if (tooltip) tooltip.textContent = 'Esportes';
+    const icon = sports.querySelector('#icon, yt-icon');
+    if (icon) {
+      const trophy = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      trophy.setAttribute('class', 'ytgif-sports-trophy');
+      trophy.setAttribute('viewBox', '0 0 24 24');
+      trophy.setAttribute('aria-hidden', 'true');
+      trophy.setAttribute('focusable', 'false');
+      trophy.innerHTML = '<g fill="none" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0.7px 1px 0.7px #000)"><path d="M7.5 3.5h9v5.8a4.5 4.5 0 0 1-9 0V3.5Z" stroke="#f4f4f4" stroke-width="2.1"/><path d="M7.5 5H4.7v2.1a4 4 0 0 0 4 4M16.5 5h2.8v2.1a4 4 0 0 1-4 4" stroke="#e2e2e2" stroke-width="1.8"/><path d="M12 13.8v4.1M9 21h6M10 18h4" stroke="#f4f4f4" stroke-width="2"/></g>';
+      icon.replaceWith(trophy);
+    }
+    connectSportsMenu(sports);
+    shorts.insertAdjacentElement('afterend', sports);
+  }
+
+  function clearSportsSearchField() {
+    let shouldClear = false;
+    try {
+      shouldClear = sessionStorage.getItem('ytgif-clear-search-after-sports') === '1';
+    } catch (_) {}
+    if (!shouldClear) return;
+    const input = document.querySelector('input[name="search_query"], input.yt-searchbox-input, #search input');
+    if (input) {
+      input.value = '';
+      input.setAttribute('value', '');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      try { sessionStorage.removeItem('ytgif-clear-search-after-sports'); } catch (_) {}
+    }
   }
 
   /* ---------- Botão embutido (ao lado do emoji) ---------- */
@@ -576,7 +851,7 @@
     a.before(before);
     a.replaceWith(img);
     img.after(after);
-    console.log('[GIF YouTube] Link substituído por GIF:', url);
+    console.log('[Nexus YouTube+] Link substituído por GIF:', url);
   }
 
   function renderGifLinks() {
@@ -633,14 +908,269 @@
       });
   }
 
+
+  /* ---------- YouTube Plus: ferramentas extras locais ---------- */
+  const YTP_KEY = 'ytgif-plus-state-v2';
+  const ytpState = (() => { try { return JSON.parse(localStorage.getItem(YTP_KEY) || '{}'); } catch (_) { return {}; } })();
+  const ytpGet = (k, fallback) => ytpState[k] === undefined ? fallback : ytpState[k];
+  function ytpSave() { try { localStorage.setItem(YTP_KEY, JSON.stringify(ytpState)); } catch (_) {} }
+  function ytpVideo() { return document.querySelector('ytd-player video.html5-main-video, #movie_player video, video.html5-main-video'); }
+  function ytpToast(msg) {
+    let el = document.getElementById('ytgif-plus-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'ytgif-plus-toast'; document.body.appendChild(el); }
+    el.textContent = msg; el.classList.add('show'); clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  function ytpButton(label, title, fn) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ytgif-plus-btn'; b.textContent = label; b.title = title; b.setAttribute('aria-label', title); b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fn(); }); return b;
+  }
+  function ytpCurrentId() { return new URL(location.href).searchParams.get('v') || location.pathname.split('/').filter(Boolean).pop() || 'unknown'; }
+  function ytpLoadList(k) { try { const all = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(all) ? all : []; } catch (_) { return []; } }
+  function ytpSaveList(k, value) { try { localStorage.setItem(k, JSON.stringify(value)); } catch (_) {} }
+  function ytpBookmark() {
+    const v = ytpVideo(); if (!v) return ytpToast('Vídeo não encontrado');
+    const item = { id: ytpCurrentId(), title: document.title.replace(/\s*-\s*YouTube$/, ''), time: Math.floor(v.currentTime), url: location.href.split('&t=')[0], savedAt: Date.now() };
+    const list = ytpLoadList('ytgif-plus-bookmarks'); list.unshift(item); ytpSaveList('ytgif-plus-bookmarks', list.slice(0, 300)); ytpToast(`Momento salvo: ${formatTime(item.time)}`);
+  }
+  function formatTime(sec) { sec = Math.max(0, Math.floor(sec || 0)); return `${Math.floor(sec/3600) ? Math.floor(sec/3600)+':' : ''}${String(Math.floor(sec/60)%60).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`; }
+  function ytpCapture() {
+    const v = ytpVideo(); if (!v || !v.videoWidth) return ytpToast('O vídeo ainda não está pronto');
+    try { const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v,0,0); c.toBlob(blob => { if (!blob) return ytpToast('Não foi possível capturar este quadro'); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `youtube-${ytpCurrentId()}-${formatTime(v.currentTime).replace(/:/g,'-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }, 'image/png'); } catch (_) { ytpToast('Captura bloqueada pelo navegador neste vídeo'); }
+  }
+  async function ytpPictureInPicture() {
+    const v = ytpVideo();
+    if (!v) return ytpToast('Vídeo não encontrado');
+    try {
+      if (document.pictureInPictureElement === v) { await document.exitPictureInPicture(); return; }
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      if (!document.pictureInPictureEnabled || typeof v.requestPictureInPicture !== 'function') {
+        return ytpToast('Picture-in-Picture não é compatível com este vídeo ou navegador');
+      }
+      await v.requestPictureInPicture();
+      ytpToast('Vídeo flutuante aberto. Arraste a janela PiP para qualquer área da tela.');
+    } catch (error) {
+      ytpToast('Não foi possível abrir o vídeo flutuante. Tente iniciar a reprodução primeiro.');
+    }
+  }
+  function ytpTimer() {
+    const raw = prompt('Parar a reprodução em quantos minutos? (0 cancela)', String(ytpGet('timerMinutes', 30)));
+    if (raw === null) return; const mins = Number(raw);
+    if (!Number.isFinite(mins) || mins < 0 || mins > 1440) return ytpToast('Digite um valor entre 0 e 1440');
+    ytpState.timerMinutes = mins; ytpSave(); if (window.__ytgifStopTimer) clearTimeout(window.__ytgifStopTimer);
+    if (!mins) return ytpToast('Temporizador cancelado');
+    window.__ytgifStopTimer = setTimeout(() => { const v = ytpVideo(); if (v) v.pause(); ytpToast('Temporizador: reprodução pausada'); }, mins * 60000); ytpToast(`Temporizador definido: ${mins} min`);
+  }
+  function ytpCinema() { document.documentElement.classList.toggle('ytgif-plus-cinema'); const on = document.documentElement.classList.contains('ytgif-plus-cinema'); ytpState.cinema = on; ytpSave(); ytpToast(on ? 'Modo cinema ativado (Esc para sair)' : 'Modo cinema desativado'); }
+  function ytpCustomize() {
+    const accent = prompt('Cor de destaque (nome ou hexadecimal, ex. #3ea6ff):', ytpGet('accent', '#3ea6ff')); if (accent === null) return;
+    const size = prompt('Tamanho dos controles (compacto, normal ou grande):', ytpGet('controlSize', 'normal')); if (size === null) return;
+    const safeAccent = /^#[0-9a-f]{3,8}$/i.test(accent.trim()) || /^[a-z]{3,20}$/i.test(accent.trim()) ? accent.trim() : '#3ea6ff';
+    ytpState.accent = safeAccent; ytpState.controlSize = ['compacto','normal','grande'].includes(size.toLowerCase()) ? size.toLowerCase() : 'normal'; ytpSave(); document.documentElement.style.setProperty('--ytgif-plus-accent', ytpState.accent); document.documentElement.dataset.ytgifPlusSize = ytpState.controlSize; ytpToast('Personalização salva');
+  }
+  function ytpFilterComments() {
+    const words = prompt('Palavras para ocultar nos comentários, separadas por vírgula:', ytpGet('blockedWords', '').join(', ')); if (words === null) return;
+    ytpState.blockedWords = words.split(',').map(x => x.trim().toLowerCase()).filter(Boolean).slice(0, 50); ytpSave(); ytpApplyCommentFilters(); ytpToast('Filtro de comentários atualizado');
+  }
+  function ytpApplyCommentFilters() {
+    if (!extensionConfig.enabled || !extensionConfig.commentTools) return;
+    const words = ytpGet('blockedWords', []); if (!words.length) { document.querySelectorAll('[data-ytgif-filter-hidden="1"]').forEach(el => { el.hidden = false; delete el.dataset.ytgifFilterHidden; }); return; }
+    document.querySelectorAll('ytd-comment-view-model, ytd-comment-renderer, yt-comment-view-model, yt-comment-thread-renderer').forEach(el => {
+      const text = (el.innerText || '').toLowerCase(); const hide = words.some(w => w && text.includes(w)); el.hidden = hide; if (hide) el.dataset.ytgifFilterHidden = '1'; else delete el.dataset.ytgifFilterHidden;
+    });
+  }
+  function ytpShowBookmarks() {
+    const list = ytpLoadList('ytgif-plus-bookmarks'); if (!list.length) return ytpToast('Ainda não há momentos salvos');
+    const chosen = prompt('Momentos salvos:\n' + list.slice(0, 20).map((x,i)=>`${i+1}. ${x.title} — ${formatTime(x.time)}`).join('\n') + '\n\nDigite o número para abrir:', '1');
+    const idx = Number(chosen) - 1; if (chosen === null || !Number.isInteger(idx) || !list[idx]) return;
+    const x = list[idx]; location.href = `https://www.youtube.com/watch?v=${encodeURIComponent(x.id)}&t=${x.time}s`;
+  }
+  function ytpInjectToolbar() {
+    if (!extensionConfig.enabled || !extensionConfig.plusToolbar) { const old=document.querySelector('.ytgif-plus-toolbar'); if(old) old.remove(); return; }
+    const video = ytpVideo();
+    if (!video) return;
+    let panel = document.getElementById('ytgif-plus-floating-panel');
+    let toggle = document.getElementById('ytgif-plus-floating-toggle');
+    if (!toggle) {
+      toggle = document.createElement('button');
+      toggle.id = 'ytgif-plus-floating-toggle';
+      toggle.type = 'button';
+      toggle.textContent = '✦';
+      toggle.title = 'Abrir ferramentas Nexus YouTube+';
+      toggle.setAttribute('aria-label', 'Abrir ferramentas Nexus YouTube+');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const p = document.getElementById('ytgif-plus-floating-panel');
+        if (!p) return;
+        const open = p.hidden;
+        p.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = open ? '×' : '✦';
+        toggle.title = open ? 'Fechar ferramentas' : 'Abrir ferramentas Nexus YouTube+';
+      });
+      document.body.appendChild(toggle);
+    }
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.id = 'ytgif-plus-floating-panel';
+      panel.hidden = true;
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-label', 'Ferramentas do YouTube Plus');
+      const heading = document.createElement('div');
+      heading.className = 'ytgif-plus-panel-heading';
+      heading.textContent = 'YouTube Plus';
+      const bar = document.createElement('div');
+      bar.className = 'ytgif-plus-toolbar';
+      bar.setAttribute('role', 'toolbar');
+      bar.setAttribute('aria-label', 'Ferramentas extras do YouTube');
+      bar.append(
+        ytpButton('−5s','Voltar 5 segundos',()=>{ const v=ytpVideo(); if(v)v.currentTime=Math.max(0,v.currentTime-5); }),
+        ytpButton('+5s','Avançar 5 segundos',()=>{ const v=ytpVideo(); if(v)v.currentTime=Math.min(v.duration||Infinity,v.currentTime+5); }),
+        ytpButton('1×','Velocidade de reprodução',()=>{ const v=ytpVideo(); if(!v)return; const speeds=[0.5,0.75,1,1.25,1.5,1.75,2,2.5,3]; const i=speeds.indexOf(v.playbackRate); v.playbackRate=speeds[(i+1)%speeds.length]; bar.querySelector('[aria-label="Velocidade de reprodução"]').textContent=v.playbackRate+'×'; ytpToast('Velocidade '+v.playbackRate+'×'); }),
+        ytpButton('☆','Salvar momento exato',ytpBookmark),
+        ytpButton('▣','Capturar quadro',ytpCapture),
+        ytpButton('PiP','Abrir vídeo flutuante fora do Chrome',ytpPictureInPicture),
+        ytpButton('▰','Modo cinema',ytpCinema),
+        ytpButton('◷','Temporizador',ytpTimer),
+        ytpButton('★','Momentos salvos',ytpShowBookmarks),
+        ytpButton('⚙','Personalizar',ytpCustomize),
+        ytpButton('☷','Filtrar comentários',ytpFilterComments)
+      );
+      panel.append(heading, bar);
+      document.body.appendChild(panel);
+    }
+    const v = video;
+    if (!v.dataset.ytgifHistoryBound) {
+      v.dataset.ytgifHistoryBound = '1';
+      v.addEventListener('timeupdate', () => {
+        if (!v.duration || !Number.isFinite(v.currentTime)) return;
+        const id = ytpCurrentId();
+        const hist = ytpLoadList('ytgif-plus-history');
+        const now = Date.now();
+        const existing = hist.find(x => x.id === id);
+        if (existing) { existing.time = Math.floor(v.currentTime); existing.duration = Math.floor(v.duration); existing.updatedAt = now; }
+        else hist.unshift({ id, title: document.title.replace(/\s*-\s*YouTube$/, ''), url: location.href, time: Math.floor(v.currentTime), duration: Math.floor(v.duration), updatedAt: now });
+        ytpSaveList('ytgif-plus-history', hist.slice(0, 100));
+      }, { passive: true });
+    }
+  }
+  function ytpKeyboard(e) {
+    if (!extensionConfig.shortcuts) return;
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t=e.target; if (t && (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName))) return;
+    const v=ytpVideo(); if (!v) return;
+    if (e.key==='[') { v.currentTime=Math.max(0,v.currentTime-5); }
+    else if (e.key===']') { v.currentTime=Math.min(v.duration||Infinity,v.currentTime+5); }
+    else if (e.key.toLowerCase()==='b') { e.preventDefault(); ytpBookmark(); }
+    else if (e.key.toLowerCase()==='c') { e.preventDefault(); ytpCapture(); }
+    else if (e.key.toLowerCase()==='m') { e.preventDefault(); ytpCinema(); }
+    else if (e.key.toLowerCase()==='j' && e.shiftKey) { e.preventDefault(); ytpShowBookmarks(); }
+    else if (e.key==='Escape' && document.documentElement.classList.contains('ytgif-plus-cinema')) { document.documentElement.classList.remove('ytgif-plus-cinema'); ytpState.cinema=false; ytpSave(); }
+  }
+  document.addEventListener('keydown', ytpKeyboard, true);
+  if (ytpGet('cinema', false)) document.documentElement.classList.add('ytgif-plus-cinema');
+  if (ytpGet('accent', null)) document.documentElement.style.setProperty('--ytgif-plus-accent', ytpState.accent);
+  if (ytpGet('controlSize', null)) document.documentElement.dataset.ytgifPlusSize = ytpState.controlSize;
+  setInterval(() => { try { ytpInjectToolbar(); ytpApplyCommentFilters(); } catch (_) {} }, 1200);
+
+
+  /* ---------- Atalho de configurações no fim da barra lateral ---------- */
+  function injectSettingsSidebarEntry() {
+    if (!extensionConfig.enabled) {
+      document.querySelectorAll('.ytgif-sidebar-settings, #ytgif-settings-fallback').forEach(el => el.remove());
+      return;
+    }
+    if (document.querySelector('.ytgif-sidebar-settings')) return;
+
+    const guide = document.querySelector('ytd-guide-renderer');
+    const sections = guide ? [...guide.querySelectorAll('ytd-guide-section-renderer #items')].filter(el => el.isConnected) : [];
+    const host = sections.find(el => el.querySelector('ytd-guide-entry-renderer')) ||
+      (guide && (guide.querySelector('#sections') || guide.querySelector('#items')));
+
+    const openSettings = (event) => {
+      if (event) { event.preventDefault(); event.stopPropagation(); }
+      // Content scripts não podem abrir a página de opções diretamente.
+      // Solicite ao service worker para abrir a página, evitando o bloqueio do Chrome.
+      try {
+        chrome.runtime.sendMessage({ type: 'open-options' }, () => {
+          // Leia lastError para evitar avisos no console se a extensão estiver sendo recarregada.
+          const error = chrome.runtime.lastError;
+          if (error) console.warn('[Nexus YouTube+] Não foi possível abrir configurações:', error.message);
+        });
+      } catch (error) {
+        console.warn('[Nexus YouTube+] Falha ao solicitar abertura das configurações:', error);
+      }
+    };
+
+    if (host) {
+      const nativeEntry = [...guide.querySelectorAll('ytd-guide-entry-renderer')].find(entry => {
+        const title = entry.querySelector('#title, yt-formatted-string');
+        return title && title.textContent.trim().toLowerCase() === 'shorts';
+      });
+      if (nativeEntry) {
+        const item = nativeEntry.cloneNode(true);
+        item.classList.add('ytgif-sidebar-settings');
+        item.removeAttribute('selected');
+        const link = item.querySelector('a[href], #endpoint');
+        if (link) {
+          link.href = '#';
+          link.setAttribute('aria-label', 'Configurações da extensão');
+          link.setAttribute('title', 'Configurações da extensão');
+          link.removeAttribute('aria-current');
+          link.addEventListener('click', openSettings);
+        } else {
+          item.addEventListener('click', openSettings);
+        }
+        const title = item.querySelector('#title, yt-formatted-string');
+        if (title) title.textContent = 'Configurações';
+        const icon = item.querySelector('#icon, yt-icon');
+        if (icon) icon.innerHTML = '<span class="ytgif-settings-gear" aria-hidden="true">⚙</span>';
+        item.setAttribute('title', 'Abrir configurações do Nexus YouTube+');
+        item.addEventListener('click', openSettings);
+        host.appendChild(item);
+        return;
+      }
+    }
+
+    // Fallback garantido: aparece no canto inferior esquerdo caso o YouTube mude a estrutura da guia.
+    const fallback = document.createElement('button');
+    fallback.id = 'ytgif-settings-fallback';
+    fallback.type = 'button';
+    fallback.innerHTML = '<span aria-hidden="true">⚙</span><span>Configurações</span>';
+    fallback.title = 'Abrir configurações do Nexus YouTube+';
+    fallback.addEventListener('click', openSettings);
+    document.body.appendChild(fallback);
+  }
+
+  /* ---------- Ocultar atalhos durante vídeo longo em tela cheia ---------- */
+  function updateLongVideoFullscreenState() {
+    const player = document.querySelector('#movie_player');
+    const isLongVideoPage = location.pathname === '/watch' &&
+      !!document.querySelector('ytd-watch-flexy') &&
+      !document.querySelector('ytd-reel-video-renderer, ytd-shorts');
+    const isFullscreen = !!(document.fullscreenElement ||
+      (player && player.classList.contains('ytp-fullscreen')) ||
+      document.querySelector('ytd-watch-flexy[fullscreen]'));
+    document.documentElement.classList.toggle('nexus-long-video-fullscreen', isLongVideoPage && isFullscreen);
+  }
+  document.addEventListener('fullscreenchange', updateLongVideoFullscreenState, true);
+  document.addEventListener('webkitfullscreenchange', updateLongVideoFullscreenState, true);
+  window.addEventListener('yt-navigate-finish', updateLongVideoFullscreenState, true);
+
   /* ---------- Observador (YouTube é uma SPA) ---------- */
   let timer = null;
   const schedule = () => {
     if (timer) return;
     timer = setTimeout(() => {
       timer = null;
+      injectSportsTab();
+      injectMiniSportsTab();
+      injectSettingsSidebarEntry();
+      clearSportsSearchField();
       injectButtons();
       renderGifLinks();
+      ytpInjectToolbar();
+      ytpApplyCommentFilters();
+      updateLongVideoFullscreenState();
     }, 400);
   };
   new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true, characterData: true });

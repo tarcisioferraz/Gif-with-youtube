@@ -30,6 +30,48 @@
   outline-offset: 2px;
 }
 
+.ytgif-sports-entry .ytgif-sports-trophy,
+.ytgif-mini-sports-entry .ytgif-sports-trophy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 22px;
+  line-height: 1;
+  object-fit: contain;
+  overflow: visible;
+  flex: 0 0 24px;
+}
+.ytgif-sports-entry #icon, .ytgif-mini-sports-entry #icon { overflow: visible; }
+#ytgif-sports-menu { max-height: min(70vh, 520px); overflow-y: auto; }
+
+#ytgif-sports-menu {
+  position: fixed;
+  z-index: 2147483646;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--yt-spec-10-percent-layer, rgba(255,255,255,.18));
+  border-radius: 12px;
+  background: var(--yt-spec-menu-background, #212121);
+  box-shadow: 0 8px 28px rgba(0,0,0,.4);
+  font-family: Roboto, Arial, sans-serif;
+}
+#ytgif-sports-menu[hidden] { display: none; }
+#ytgif-sports-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--yt-spec-text-primary, #fff);
+  font-size: 14px;
+  text-decoration: none;
+}
+#ytgif-sports-menu a:hover { background: var(--yt-spec-badge-chip-background, rgba(255,255,255,.14)); }
+#ytgif-sports-menu a span { width: 22px; text-align: center; font-size: 18px; }
+
 #ytgif-panel {
   position: fixed;
   z-index: 2147483647;
@@ -167,3 +209,152 @@
   line-height: 0 !important;
   color: transparent !important;
 }
+
+
+/* YouTube Plus: barra de ferramentas compacta, só aparece ao passar o mouse/focar no player */
+.ytgif-plus-toolbar { position:absolute !important; z-index:9999 !important; right:12px !important; top:12px !important; display:flex !important; flex-wrap:wrap !important; gap:4px !important; max-width:min(92%,520px) !important; padding:5px !important; border-radius:12px !important; background:rgba(15,15,15,.82) !important; backdrop-filter:blur(8px) !important; opacity:.28; transition:opacity .15s ease !important; }
+#movie_player:hover .ytgif-plus-toolbar, #movie_player:focus-within .ytgif-plus-toolbar, .ytgif-plus-toolbar:hover { opacity:1 !important; }
+.ytgif-plus-btn { border:0 !important; border-radius:8px !important; min-width:30px !important; height:30px !important; padding:0 8px !important; color:#fff !important; background:transparent !important; font:500 12px Roboto,Arial,sans-serif !important; cursor:pointer !important; }
+.ytgif-plus-btn:hover, .ytgif-plus-btn:focus-visible { background:var(--ytgif-plus-accent,#3ea6ff) !important; outline:none !important; }
+html[data-ytgif-plus-size="compacto"] .ytgif-plus-btn { min-width:25px !important; height:25px !important; font-size:10px !important; padding:0 5px !important; }
+html[data-ytgif-plus-size="grande"] .ytgif-plus-btn { min-width:36px !important; height:36px !important; font-size:14px !important; padding:0 10px !important; }
+#ytgif-plus-toast { position:fixed; z-index:2147483647; bottom:28px; left:50%; transform:translateX(-50%); padding:10px 16px; border-radius:10px; background:#222; color:#fff; box-shadow:0 4px 18px #0008; font:14px Roboto,Arial,sans-serif; opacity:0; pointer-events:none; transition:opacity .15s; }
+#ytgif-plus-toast.show { opacity:1; }
+html.ytgif-plus-cinema ytd-watch-flexy #player-container-outer, html.ytgif-plus-cinema ytd-watch-flexy #player-theater-container { position:relative !important; z-index:1000 !important; }
+html.ytgif-plus-cinema ytd-watch-flexy #secondary, html.ytgif-plus-cinema ytd-watch-flexy #below { opacity:.18; transition:opacity .2s; }
+html.ytgif-plus-cinema ytd-watch-flexy #secondary:hover, html.ytgif-plus-cinema ytd-watch-flexy #below:hover { opacity:1; }
+
+
+/* Painel flutuante global: acima do player, comentários e overlays dos Shorts. */
+#ytgif-plus-floating-toggle {
+  position: fixed !important; right: 18px !important; top: 42% !important;
+  z-index: 2147483646 !important; width: 46px !important; height: 46px !important;
+  border: 1px solid rgba(255,255,255,.22) !important; border-radius: 50% !important;
+  background: #202020 !important; color: #fff !important; box-shadow: 0 4px 18px #0009 !important;
+  font: 700 24px/1 Arial,sans-serif !important; cursor: pointer !important;
+}
+#ytgif-plus-floating-toggle:hover, #ytgif-plus-floating-toggle:focus-visible { background: var(--ytgif-plus-accent,#3ea6ff) !important; outline: 2px solid #fff !important; }
+#ytgif-plus-floating-panel {
+  position: fixed !important; right: 18px !important; top: calc(42% + 54px) !important;
+  z-index: 2147483647 !important; width: min(280px, calc(100vw - 28px)) !important;
+  max-height: min(70vh, 560px) !important; overflow-y: auto !important;
+  padding: 10px !important; border: 1px solid rgba(255,255,255,.18) !important;
+  border-radius: 14px !important; background: rgba(25,25,25,.97) !important;
+  color: #fff !important; box-shadow: 0 10px 36px #000b !important; backdrop-filter: blur(14px) !important;
+}
+#ytgif-plus-floating-panel[hidden] { display:none !important; }
+.ytgif-plus-panel-heading { padding: 4px 6px 10px !important; color: #fff !important; font: 600 14px Roboto,Arial,sans-serif !important; }
+#ytgif-plus-floating-panel .ytgif-plus-toolbar { position: static !important; display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 5px !important; max-width: none !important; padding: 0 !important; background: transparent !important; opacity: 1 !important; }
+#ytgif-plus-floating-panel .ytgif-plus-btn { width: 100% !important; min-width: 0 !important; min-height: 38px !important; height: auto !important; padding: 7px 4px !important; background: #333 !important; white-space: normal !important; }
+#ytgif-plus-floating-panel .ytgif-plus-btn:hover { background: var(--ytgif-plus-accent,#3ea6ff) !important; }
+
+/* YouTube Plus 2.1.0 */
+.ytgif-tools-toggle {
+  border: 0; border-radius: 16px; padding: 6px 10px; cursor: pointer;
+  color: var(--yt-spec-text-primary, #f1f1f1);
+  background: var(--yt-spec-badge-chip-background, rgba(128,128,128,.18));
+  font: 500 12px Roboto, Arial, sans-serif;
+}
+.ytgif-plus-tools { padding: 12px; border-top: 1px solid var(--yt-spec-10-percent-layer, rgba(128,128,128,.2)); }
+.ytgif-plus-tools[hidden] { display: none !important; }
+.ytgif-plus-title { font: 600 14px Roboto, Arial, sans-serif; margin-bottom: 10px; color: var(--yt-spec-text-primary, #f1f1f1); }
+.ytgif-plus-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.ytgif-plus-grid button { min-height: 34px; border: 0; border-radius: 8px; padding: 7px; cursor: pointer; text-align: left; color: var(--yt-spec-text-primary, #f1f1f1); background: var(--yt-spec-badge-chip-background, rgba(128,128,128,.14)); font: 12px Roboto, Arial, sans-serif; }
+.ytgif-plus-grid button:hover { background: var(--yt-spec-10-percent-layer, rgba(128,128,128,.25)); }
+.ytgif-plus-status { margin-top: 9px; font: 12px/1.4 Roboto, Arial, sans-serif; color: var(--yt-spec-text-secondary, #aaa); overflow-wrap: anywhere; }
+html.ytgif-plus-clean ytd-watch-next-secondary-results-renderer,
+html.ytgif-plus-clean #secondary,
+html.ytgif-plus-clean ytd-reel-video-renderer #comments-button { display: none !important; }
+html.ytgif-plus-shorts ytd-reel-video-renderer #actions,
+html.ytgif-plus-shorts ytd-reel-video-renderer #metadata { opacity: .18; transition: opacity .15s ease; }
+html.ytgif-plus-shorts ytd-reel-video-renderer:hover #actions,
+html.ytgif-plus-shorts ytd-reel-video-renderer:hover #metadata { opacity: 1; }
+
+/* Configurações persistentes da versão 2.2.0 */
+html.ytgif-extension-disabled .ytgif-btn,
+html.ytgif-extension-disabled #ytgif-panel,
+html.ytgif-extension-disabled .ytgif-plus-toolbar,
+html.ytgif-extension-disabled .ytgif-sports-entry,
+html.ytgif-extension-disabled .ytgif-mini-sports-entry,
+html.ytgif-extension-disabled #ytgif-sports-menu { display:none !important; }
+html.ytgif-hide-gif-button .ytgif-btn { display:none !important; }
+html.ytgif-hide-plus-toolbar .ytgif-plus-toolbar { display:none !important; }
+html.ytgif-disable-comment-tools .ytgif-plus-toolbar { display:none !important; }
+html.ytgif-custom-bg-main body,
+html.ytgif-custom-bg-all body { background-color:var(--ytgif-custom-background,#0f0f0f) !important; background-image:var(--ytgif-custom-bg-image,none) !important; background-size:cover !important; background-attachment:fixed !important; }
+html.ytgif-custom-bg-main ytd-app,
+html.ytgif-custom-bg-main #page-manager,
+html.ytgif-custom-bg-main ytd-watch-flexy,
+html.ytgif-custom-bg-main ytd-browse,
+html.ytgif-custom-bg-main ytd-search,
+html.ytgif-custom-bg-main ytd-rich-grid-renderer,
+html.ytgif-custom-bg-all ytd-app,
+html.ytgif-custom-bg-all #page-manager,
+html.ytgif-custom-bg-all ytd-watch-flexy,
+html.ytgif-custom-bg-all ytd-browse,
+html.ytgif-custom-bg-all ytd-search,
+html.ytgif-custom-bg-all ytd-rich-grid-renderer { background-color:transparent !important; }
+html.ytgif-custom-bg-all ytd-masthead,
+html.ytgif-custom-bg-all #guide-content,
+html.ytgif-custom-bg-all tp-yt-paper-dialog { background-color:var(--ytgif-custom-background,#0f0f0f) !important; }
+html.ytgif-compact-panel #ytgif-panel { max-width:340px !important; }
+
+/* Atalho de gerenciamento no final da barra lateral do YouTube */
+.ytgif-sidebar-settings {
+  display:flex; align-items:center; gap:24px; min-height:40px; margin:8px 12px 12px;
+  padding:0 12px; border-radius:10px; color:var(--yt-spec-text-primary,#f1f1f1);
+  font:500 14px Roboto,Arial,sans-serif; cursor:pointer; user-select:none;
+}
+.ytgif-sidebar-settings:hover { background:var(--yt-spec-badge-chip-background,rgba(255,255,255,.1)); }
+.ytgif-sidebar-settings:focus-visible { outline:2px solid var(--yt-spec-call-to-action,#3ea6ff); outline-offset:2px; }
+.ytgif-sidebar-settings-icon { display:inline-flex; align-items:center; justify-content:center; width:24px; font-size:20px; }
+.ytgif-sidebar-settings-label { white-space:nowrap; }
+ytd-guide-renderer #sections .ytgif-sidebar-settings { order:9999; }
+
+/* Robust sidebar entry: appended after the last navigation/Subscriptions item */
+button.ytgif-sidebar-settings {
+  appearance:none !important; box-sizing:border-box !important; width:calc(100% - 16px) !important;
+  display:flex !important; align-items:center !important; gap:24px !important; min-height:40px !important;
+  margin:12px 8px 16px !important; padding:0 12px !important; border:0 !important; border-radius:10px !important;
+  background:transparent !important; color:var(--yt-spec-text-primary,#f1f1f1) !important;
+  font:500 14px Roboto,Arial,sans-serif !important; text-align:left !important; cursor:pointer !important;
+}
+button.ytgif-sidebar-settings:hover { background:var(--yt-spec-badge-chip-background,rgba(255,255,255,.1)) !important; }
+button.ytgif-sidebar-settings:focus-visible { outline:2px solid var(--yt-spec-call-to-action,#3ea6ff) !important; outline-offset:2px !important; }
+.ytgif-sidebar-settings-icon { display:inline-flex !important; align-items:center !important; justify-content:center !important; flex:0 0 24px !important; width:24px !important; font-size:20px !important; }
+.ytgif-sidebar-settings-label { white-space:nowrap !important; }
+ytd-mini-guide-renderer .ytgif-sidebar-settings { display:none !important; }
+
+/* Versão 2.2.3: compatibilidade com o componente nativo da navegação do YouTube */
+ytd-guide-entry-renderer.ytgif-sidebar-settings { display:block !important; }
+ytd-guide-entry-renderer.ytgif-sidebar-settings #endpoint,
+ytd-guide-entry-renderer.ytgif-sidebar-settings a { cursor:pointer !important; }
+ytd-guide-entry-renderer.ytgif-sidebar-settings .ytgif-settings-gear {
+  display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
+  font-size:20px; line-height:1;
+}
+.ytgif-sidebar-settings .ytgif-settings-gear { flex:0 0 24px; }
+
+/* Ícone de troféu vetorial original, sem carregar arquivo da extensão dentro do YouTube */
+svg.ytgif-sports-trophy { width:24px !important; height:24px !important; display:inline-flex; flex:0 0 24px; overflow:visible; }
+/* Botão de emergência para configurações se a navegação lateral do YouTube não estiver disponível */
+#ytgif-settings-fallback { position:fixed !important; left:12px !important; bottom:16px !important; z-index:2147483647 !important; display:flex !important; align-items:center !important; gap:10px !important; padding:10px 14px !important; border:1px solid var(--yt-spec-10-percent-layer,rgba(255,255,255,.2)) !important; border-radius:24px !important; background:var(--yt-spec-badge-chip-background,#272727) !important; color:var(--yt-spec-text-primary,#fff) !important; box-shadow:0 2px 10px rgba(0,0,0,.35) !important; font:500 13px Roboto,Arial,sans-serif !important; cursor:pointer !important; }
+#ytgif-settings-fallback span:first-child { font-size:19px !important; line-height:1 !important; }
+#ytgif-settings-fallback:hover { filter:brightness(1.15); }
+
+
+/* Nexus YouTube+: esconder atalhos da extensão em vídeos longos em tela cheia. */
+html.nexus-long-video-fullscreen .ytgif-sidebar-settings,
+html.nexus-long-video-fullscreen #ytgif-settings-fallback,
+html.nexus-long-video-fullscreen .ytgif-plus-toolbar,
+html.nexus-long-video-fullscreen #ytgif-plus-floating-toggle,
+html.nexus-long-video-fullscreen #ytgif-plus-floating-panel,
+html.nexus-long-video-fullscreen .ytgif-plus-toast,
+html.nexus-long-video-fullscreen #ytgif-plus-toast {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+/* Nexus YouTube+ 2.3.0: affordance for PiP stays within the native browser player window. */
+#ytgif-plus-floating-panel .ytgif-plus-btn[aria-label="Abrir vídeo flutuante fora do Chrome"]{background:#183b59!important;color:#bfe4ff!important;font-weight:800!important}
+#ytgif-plus-floating-panel .ytgif-plus-btn[aria-label="Abrir vídeo flutuante fora do Chrome"]:hover{background:var(--ytgif-plus-accent,#3ea6ff)!important;color:#fff!important}

@@ -1,1 +1,8 @@
-// Não é necessária configuração nem chave de API.
+const DEFAULTS={enabled:true,gifButton:true,plusToolbar:true,shortcuts:true,commentTools:true,backgroundColor:'#0f0f0f',backgroundImage:'',backgroundOpacity:25,backgroundTarget:'main',compactPanel:false};
+const ids=Object.keys(DEFAULTS), $=id=>document.getElementById(id);
+function read(){return new Promise(resolve=>chrome.storage.sync.get(DEFAULTS,resolve))}
+function save(patch){$('saveStatus').innerHTML='<span class="status-dot"></span> Salvando configurações…';chrome.storage.sync.set(patch,()=>{$('saveStatus').innerHTML='<span class="status-dot"></span> Configurações salvas automaticamente';});}
+function render(data){ids.forEach(id=>{const el=$(id);if(!el)return;if(el.type==='checkbox')el.checked=!!data[id];else el.value=data[id]??DEFAULTS[id];});const videoToggle=$('plusToolbarVideo');if(videoToggle)videoToggle.checked=!!data.plusToolbar;$('opacityValue').textContent=$('backgroundOpacity').value+'%';}
+(async()=>{render(await read());ids.forEach(id=>{const el=$(id);if(!el)return;el.addEventListener('change',()=>{const value=el.type==='checkbox'?el.checked:(el.type==='range'?Number(el.value):el.value);save({[id]:value});if(id==='backgroundOpacity')$('opacityValue').textContent=value+'%';});if(el.type==='range')el.addEventListener('input',()=>{$('opacityValue').textContent=el.value+'%';});});const videoToggle=$('plusToolbarVideo');if(videoToggle)videoToggle.addEventListener('change',()=>save({plusToolbar:videoToggle.checked}));})();
+$('resetBackground').addEventListener('click',()=>{const patch={backgroundColor:DEFAULTS.backgroundColor,backgroundImage:'',backgroundOpacity:25,backgroundTarget:'main'};save(patch);read().then(render);});
+$('resetAll').addEventListener('click',()=>{save(DEFAULTS);render(DEFAULTS);});
