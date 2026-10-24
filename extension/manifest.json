@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Nexus YouTube+",
+  "version": "2.3.1",
+  "description": "Nexus YouTube+ com verificação de atualizações pelo GitHub, interface renovada e ferramentas de vídeo.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.giphy.com/*",
+    "https://api.giphy.com/*",
+    "https://c.tenor.com/*",
+    "https://giphy.com/*",
+    "https://media.tenor.com/*",
+    "https://raw.githubusercontent.com/*",
+    "https://tenor.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/trophy.svg"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Configurar Nexus YouTube+"
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}
