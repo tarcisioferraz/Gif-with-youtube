@@ -1,0 +1,111 @@
+Nexus YouTube+ v2.3.5
+
+
+ATUALIZAÇÕES PELO GITHUB
+A versão instalada consulta o manifesto público em https://raw.githubusercontent.com/tarcisioferraz/Nexus-Youtube-/main/extension/manifest.json ao iniciar o Chrome e a cada 6 horas. Também é possível clicar em “Verificar atualizações” nas configurações. Quando a versão remota for superior, o Chrome mostra uma notificação que abre as versões oficiais do GitHub.
+
+IMPORTANTE: o repositório precisa ter o manifesto atualizado para cada nova versão. Esta extensão está instalada por “Carregar sem compactação”, então o Chrome não instala arquivos novos sozinho: é preciso baixar a versão no GitHub, substituir a pasta local e clicar em Recarregar em chrome://extensions.
+
+INSTALAR
+1. Extraia este ZIP em uma pasta.
+2. Abra chrome://extensions e ative o Modo do desenvolvedor.
+3. Clique em Carregar sem compactação e selecione a pasta gif-comentarios-youtube.
+4. Abra o YouTube. Não é necessário configurar nada nem inserir chave de API.
+5. Nos comentários, use o botão GIF para pesquisar ou cole um link direto de GIF.
+
+PESQUISA SEM CHAVE
+A pesquisa usa páginas públicas do GIPHY e pode falhar se o site mudar ou bloquear o acesso. Colar um link direto de GIF continua sendo uma alternativa.
+
+LIMITAÇÃO
+O YouTube aceita texto nos comentários comuns. A extensão transforma links de GIF em imagens apenas localmente para quem tem a extensão instalada; pessoas sem ela verão o link.
+
+
+Versão 1.7.9: reforço dos seletores de comentários de vídeos comuns e do painel de comentários, além dos Shorts. A extensão só mantém a imagem se o GIF carregar; caso contrário, restaura o link original.
+
+Versão 1.8.3: o GIF agora é inserido como uma miniatura no próprio cursor do editor (inclusive no meio do texto). Ao publicar, o link vira uma imagem grande em uma linha própria, com o texto anterior e posterior preservados. Ao editar, o link é convertido novamente em miniatura inline. Inclui reconhecimento de media.giphy.com e media2.giphy.com em vídeos comuns e Shorts, sem buscar/navegar o frame do YouTube.
+
+Versão 1.8.4: ao inserir um GIF encostado em texto, a extensão acrescenta automaticamente um espaço antes e/ou depois dele.
+
+Versão 1.8.5: em comentários de vídeos longos, os GIFs usam a mesma estrutura de imagem do YouTube (ytCoreImageHost / ytwCommentImageAttachmentViewModelImage) e também são detectados dentro de yt-attributed-string.
+
+Versão 1.8.6: a leitura do comentário publicado agora alcança as camadas Shadow DOM abertas do YouTube. Isso permite converter o link em GIF após publicar também nos vídeos longos.
+
+Versão 1.8.7: tratamento direto da estrutura confirmada da página de vídeo longo: ytd-comment-view-model > yt-attributed-string#content-text[slot="content"] > a.ytAttributedStringLink. O link recém-publicado é convertido no GIF nativo antes da leitura genérica.
+
+Versão 1.8.8: reconhecimento explícito de URLs diretas como https://media.giphy.com/media/ID/giphy.gif, tanto no texto como no redirecionamento do YouTube. A imagem publicada usa o carregamento HTTP(S) padrão do navegador.
+
+Versão 1.9.0: adiciona a aba Esportes, com ícone de troféu, logo abaixo de Shorts na barra lateral. Ela abre a pesquisa do YouTube por vídeos de esportes.
+
+Versão 1.9.1: adiciona também Esportes na barra lateral compacta, entre Shorts e Inscrições, com título e tooltip próprios.
+
+Versão 1.9.2: corrige o ícone de troféu usando uma imagem SVG própria da extensão, compatível com a barra lateral compacta.
+
+Versão 1.9.3: Esportes agora abre um menu ao passar o mouse, com Futebol, Basquete, Vôlei, Fórmula 1, MMA e Tênis. Cada modalidade abre sua própria busca; não há mais pesquisa genérica por "esportes". O ícone foi substituído por um troféu visível na barra lateral.
+
+Versão 1.9.4: corrigido o ícone de troféu para usar o SVG empacotado como imagem; menu de Esportes ampliado com modalidades adicionais e rolagem. A escolha não exibe avisos adicionais de pesquisa. Ao selecionar uma modalidade, o YouTube ainda pode mostrar o termo no campo de pesquisa, pois esse é o comportamento nativo da página de resultados.
+
+Versão 1.9.5: ícone de troféu inserido diretamente no item da barra lateral para aparecer fora do shadow DOM do yt-icon; campo de pesquisa limpo após abrir resultados; menu ampliado para 16 modalidades.
+
+
+VERSAO 2.0.0 - FERRAMENTAS EXTRAS
+- Barra no player: -5s, +5s, velocidade, salvar momento, captura de quadro, modo cinema, temporizador, momentos salvos, personalização e filtro de comentários.
+- Atalhos: [ volta 5s; ] avança 5s; B salva o momento; C captura quadro; M alterna modo cinema; Shift+J abre momentos salvos.
+- Momentos salvos e histórico ficam armazenados localmente no navegador.
+- A captura de quadros pode ser bloqueada em vídeos protegidos por restrições do navegador/YouTube.
+- O filtro de comentários esconde comentários que contenham palavras informadas.
+
+
+Versão 2.0.1: painel flutuante de ferramentas fixado no lado direito da janela, aberto/fechado por botão e com z-index máximo para sobrepor o player, Shorts e comentários.
+
+
+RECURSOS PLUS 2.2.3
+- Painel integrado com botão Plus no painel GIF.
+- Fila inteligente: coleta links de vídeos presentes na página atual e salva localmente.
+- Limpeza visual e modo Shorts personalizado: alternam classes de estilo.
+- Estatísticas locais básicas por vídeo visitado ao clicar no recurso.
+- Repetição do trecho de 10 segundos anterior.
+- Atalhos: Alt+P abre/fecha painel; Alt+Seta esquerda/direita volta/avança 5 segundos.
+- Controle de volume até 100% pelo elemento de vídeo.
+- Exportação de dados locais em JSON e diagnóstico básico.
+- Os dados ficam no armazenamento local da página/navegador. A fila coleta somente vídeos encontrados na página atual.
+
+
+CONFIGURAÇÕES — VERSÃO 2.2.3
+- Abra os detalhes da extensão no Chrome e clique em Opções (ou use o menu da extensão, se disponível).
+- Ative/desative a extensão, o botão GIF, a barra Plus, atalhos e ferramentas de comentários.
+- Personalize o fundo do YouTube com uma cor ou URL de imagem, ajuste a opacidade e escolha o escopo.
+- As configurações são sincronizadas pelo armazenamento do Chrome.
+- Para aplicar mudanças, atualize as abas do YouTube já abertas.
+
+
+VERSÃO 2.2.3
+- Adicionado o atalho “Gerenciar funções” no final da barra lateral esquerda do YouTube, abaixo das seções de navegação/inscrições quando o layout do YouTube permitir.
+- O atalho abre a página de Opções da extensão.
+
+
+VERSÃO 2.2.3 — CORREÇÃO DO ATALHO LATERAL
+- Corrigida a busca pelo contêiner da barra lateral em diferentes estruturas do YouTube.
+- O atalho é reinserido durante a navegação dinâmica do YouTube e aparece no final do contêiner da navegação.
+
+
+VERSÃO 2.2.3 — CORREÇÃO DE ERRO E BOTÃO
+- Corrigido o uso de ícone SVG da extensão dentro do YouTube, que causava erro de URL insegura.
+- O item Gerenciar funções agora clona uma entrada nativa da barra lateral e é adicionado ao final da última seção disponível.
+
+
+Versão 2.3.0: corrigida a abertura das configurações. O botão agora solicita ao service worker da extensão que abra options.html, em vez de tentar abrir diretamente uma URL chrome-extension:// a partir do YouTube, que pode ser bloqueada pelo Chrome.
+
+
+Versão 2.3.1: adiciona checagem de atualização pelo manifesto remoto do GitHub, aviso de nova versão, verificação manual nas configurações e link para releases.
+
+Versão 2.3.1: verificador de atualização pelo manifesto do GitHub, notificação quando uma versão maior é publicada, botão de verificação manual e link para as versões oficiais.
+
+Versão 2.3.2: em vídeos longos em tela cheia, os atalhos Configurações e Nexus YouTube+ (incluindo painel, botão flutuante e botão Plus) ficam automaticamente ocultos. A detecção acompanha tanto o modo nativo do navegador quanto a classe de tela cheia do player do YouTube.
+
+Versão 2.3.3: o fundo do modo "Página e área do vídeo" agora cobre as duas camadas principais de conteúdo (página e player), sem modificar o cabeçalho. O modo "Todo o site" aplica a imagem também ao cabeçalho e aos menus.
+
+Versão 2.3.4: ao publicar um comentário em vídeo longo, os GIFs inseridos como miniatura são convertidos para o link real antes do envio. Isso garante o mesmo funcionamento dos Shorts: miniatura enquanto escreve e GIF grande após publicar.
+
+Versão 2.3.5: uma camada fixa de fundo agora fica atrás de toda a interface do YouTube. A cor ou imagem escolhida aparece inclusive nas áreas em que o YouTube não oferece fundo próprio, enquanto vídeos, textos e controles continuam acima dela. O envio do GIF em comentário de vídeo longo passa a encontrar também o botão interno “Comentar” e tenta renderizar o GIF logo após a publicação.
+
+Limitação do YouTube: comentários comuns não aceitam anexar ou enviar arquivo GIF. Sem hospedar o arquivo em um serviço externo, o comentário precisa publicar a URL do GIF; a extensão a mostra como imagem somente para quem usa a extensão.
