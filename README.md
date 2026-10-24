@@ -1,4 +1,4 @@
-# Gif-with-youtube
+# Nexus-Youtube
 this extension add gif in youtube
 
 First: extract .zip
