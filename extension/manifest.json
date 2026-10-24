@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Nexus YouTube+",
+  "version": "2.3.0",
+  "description": "Nexus YouTube+ com interface renovada, ferramentas de vídeo, Picture-in-Picture e personalização.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.giphy.com/*",
+    "https://giphy.com/*",
+    "https://*.giphy.com/*",
+    "https://media.tenor.com/*",
+    "https://c.tenor.com/*",
+    "https://tenor.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/trophy.svg"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Configurar Nexus YouTube+"
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}
