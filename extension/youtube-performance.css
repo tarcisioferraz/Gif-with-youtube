@@ -1,0 +1,30 @@
+/* Nexus YouTube+ Performance Mode — otimiza a página do YouTube, não apenas a interface da extensão. */
+/* Reduz animações caras e respeita o foco/acessibilidade sem alterar o layout. */
+html.nexus-performance-mode *,
+html.nexus-performance-mode *::before,
+html.nexus-performance-mode *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+}
+/* Desativa previews animadas/autoplay ao passar o mouse, mantendo miniaturas estáticas. */
+html.nexus-performance-mode ytd-moving-thumbnail,
+html.nexus-performance-mode ytd-thumbnail-overlay-loading-preview-renderer,
+html.nexus-performance-mode ytd-video-preview,
+html.nexus-performance-mode .ytp-inline-preview-ui,
+html.nexus-performance-mode .ytp-preview,
+html.nexus-performance-mode .ytp-tooltip.ytp-preview {
+  display: none !important;
+}
+/* Evita filtros de desfoque que podem ser caros em alguns GPUs. */
+html.nexus-performance-mode ytd-popup-container,
+html.nexus-performance-mode tp-yt-iron-dropdown {
+  backdrop-filter: none !important;
+}
+
+/* Nexus feed batching: controls only extension-created button, not YouTube player. */
+#nexus-feed-load-more { display:block; margin:24px auto 36px; padding:12px 22px; border:0; border-radius:24px; background:var(--yt-spec-badge-chip-background,#272727); color:var(--yt-spec-text-primary,#f1f1f1); font:500 14px Roboto,Arial,sans-serif; cursor:pointer; }
+#nexus-feed-load-more:hover { filter:brightness(1.18); }
+#nexus-feed-load-more:focus-visible { outline:2px solid var(--yt-spec-call-to-action,#3ea6ff); outline-offset:3px; }
