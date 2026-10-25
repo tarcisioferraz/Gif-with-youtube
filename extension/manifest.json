@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "Nexus YouTube+",
+  "version": "2.7.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvnZ3osJq0fvnJmVueKoFPHbCUJvne3GAAx68IxdqO90IpGEu1o7sHLNmEKoIPuE+plo8KTE+5pMSQPGp343Q/P6kmR3cG1RowkL0cjcCUCApwe0eFLiPbPIwbS68YdqePCSRhgYP3cbRzzXXYia4BBZs1qN/v7xA8Yi/hNHj6Rthdbgin5vfpKXjwEFy58ugnK1etexJmUB8zzIeu88c0hquopxhJv769TO1RdOXNhszIKQM/MTuEMTYbweLa+lmkVyt+TtuQHdsGmO4Pc3hs+IproqfqV9Wd1t5/EoJaxZm33omyeDrmo8IuFqSNKVGypC4wMG8Ir1a1GRb8A9MCwIDAQAB",
+  "description": "Nexus YouTube+ com YouTube Clean e iluminação ambiente dinâmica para o player.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.giphy.com/*",
+    "https://api.giphy.com/*",
+    "https://c.tenor.com/*",
+    "https://giphy.com/*",
+    "https://media.tenor.com/*",
+    "https://raw.githubusercontent.com/*",
+    "https://tenor.googleapis.com/*",
+    "https://api.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "content.js",
+        "search-heart.js",
+        "games-menu.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/trophy.svg"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Configurar Nexus YouTube+",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}
